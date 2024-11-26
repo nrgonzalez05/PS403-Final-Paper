@@ -1,0 +1,668 @@
+---
+title: "PS 403 Rep. Paper - Coding Doc"
+format: pdf
+editor: visual
+---
+
+This is my coding document to recreate "Divided By Income" by Michael Auslen and Justin H. Phillips. 
+
+The goal of this coding document is to recreate Figure 2, Table 2, and the "Whites" Appendix I table. 
+
+One of my initial concerns, or questions about this project was the amount of files that existed. This is the case because the amount of data, but also the size of that data. Every figure or piece of the article is different because each item requires so much data loading. So for each new figure, I am just going to clear my R again, instead of creating new files. 
+
+```{r}
+# Clear all objects in the environment
+rm(list = ls())
+
+# Clear memory and force garbage collection to free up memory
+gc()
+```
+
+
+```{r}
+# resting station for installing packages and loading libraries 
+
+library(tidyverse)
+library(kableExtra)
+library(dplyr)
+
+
+```
+
+This first coding chunk is to working on creating Figure 2 in the original article. There code from the original replication files works relatively seamlessly. 
+
+When discussing overall opinion gap, it is the following: 
+
+Gap_{Race,Party} = \left| \overline{Support}_{Party}^{Rich} - \overline{Support}_{Party}^{Poor}   \right|
+
+```{r}
+
+# First going to load in their data. 
+
+opinion_bootstrapped_noleaners <- readRDS("~/Documents/\"Divided By Income\" Paper Project | R Directory/Divied By Income Replication Files/bootstrap_gaps_data/opinion_bootstrapped_noleaners.RDS")
+
+opinion_bootstrapped <- opinion_bootstrapped_noleaners # This data shows a sample of n = 1000, of the original data, and creates the opinion gap of all respondents, with no Dem/Rep party leaners. 
+
+
+for (i in names(opinion_bootstrapped)) {
+  assign(i, opinion_bootstrapped[[i]])     # for loop to assign the opinions
+}
+
+# next lines of code are to set up matrices/vectors of polarization data to use in the figures
+
+dem_polarization_boot <- dem_top_boot - dem_bottom_boot
+rep_polarization_boot <- rep_top_boot - rep_bottom_boot
+all_polarization_boot <- all_top_boot - all_bottom_boot
+
+dem_issue_polarization <- abs(apply(dem_polarization_boot, MARGIN = 1, median))
+rep_issue_polarization <- abs(apply(rep_polarization_boot, MARGIN = 1, median))
+all_issue_polarization <- abs(apply(all_polarization_boot, MARGIN = 1, median))
+
+dem_avg_polarization <- apply(abs(dem_polarization_boot), MARGIN = 2, mean)
+rep_avg_polarization <- apply(abs(rep_polarization_boot), MARGIN = 2, mean)
+all_avg_polarization <- apply(abs(all_polarization_boot), MARGIN = 2, mean)
+
+dem_med_polarization <- apply(abs(dem_polarization_boot), MARGIN = 2, median)
+rep_med_polarization <- apply(abs(rep_polarization_boot), MARGIN = 2, median)
+all_med_polarization <- apply(abs(all_polarization_boot), MARGIN = 2, median)
+
+
+# Above set up the three parts of the histogram I am going to replicate below. That being the opinion gap of dems/republicans/all. 
+
+# making the histogram
+
+polhist.df <- as.data.frame(cbind(dem_issue_polarization, rep_issue_polarization, all_issue_polarization)) %>% 
+  rownames_to_column('question') %>% 
+  gather(key = party, value = opinion, -question) %>% 
+  mutate(party = case_when(party == 'rep_issue_polarization' ~ 'Republican',
+                           party == 'dem_issue_polarization' ~ 'Democrat',
+                           party == 'all_issue_polarization' ~ 'All')) %>% 
+  mutate(party = factor(party, levels = c('All', 'Democrat', 'Republican')))
+
+polvline.df <- data.frame(party = c('All', 'Democrat', 'Republican'),
+                          mean = c(median(all_avg_polarization),
+                                   median(dem_avg_polarization),
+                                   median(rep_avg_polarization)),
+                          median = c(median(all_med_polarization),
+                                     median(dem_med_polarization),
+                                     median(rep_med_polarization))) %>% 
+  gather(key = 'stat', value = 'average', mean, median)
+
+ggplot(polhist.df,
+       aes(x = opinion)) +
+  geom_histogram(aes(fill = party), color = 'black', binwidth = 0.03, alpha = 0.5) +
+  geom_vline(data = polvline.df,
+             aes(xintercept = average, color = party, linetype = stat), linewidth = 0.75) +
+  facet_grid(party ~ .) +
+  scale_fill_manual(values = c('darkgray', 'blue', 'red', 'purple')) +
+  scale_color_manual(values = c('black', 'darkblue', 'darkred', 'purple3')) +
+  labs(y = '',
+       x = 'Opinion Gap for Issue, Difference between Top and Bottom Deciles') +
+  theme_bw() +
+  theme(legend.position = 'none')
+ggsave('Figure 2_Polarization_Histogram.png', width = 8, height = 5.5)li
+```
+
+
+The next thing I am going to work on is Table 2. This table shows all the different data for each question topic type, and for each macro group, meaning Democrats, Republicans and All. 
+
+```{r}
+
+# beginning of working on table 2
+
+
+polarization_tab <- data.frame(expand.grid(party = c('rep', 'dem', 'all'),
+                                           topic_6 = unique(issuetopics$topic_6),
+                                           stringsAsFactors = FALSE),
+                               avgpol = NA,
+                               signif = NA,
+                               gilens = NA,
+                               gilenssignif = NA,
+                               disagree = NA,
+                               disagreegilens = NA,
+                               n_quest = NA,
+                               stringsAsFactors = FALSE)
+
+
+# above creates a data frame that is empty, but has place holders for the key data we want in the table. 
+
+for (i in 1:nrow(polarization_tab)) {
+  temp.issues <- issuetopics$question[issuetopics$topic_6 == polarization_tab$topic_6[i]]
+  temp.rich <- get(paste0(polarization_tab$party[i], '_top_boot'))
+  temp.rich <- temp.rich[rownames(temp.rich) %in% temp.issues,]
+  temp.poor <- get(paste0(polarization_tab$party[i], '_bottom_boot'))
+  temp.poor <- temp.poor[rownames(temp.poor) %in% temp.issues,]
+  temp.pol <- get(paste0(polarization_tab$party[i], '_polarization_boot'))
+  temp.pol <- temp.pol[rownames(temp.pol) %in% temp.issues,]
+  
+  polarization_tab$avgpol[i] <- median(colMeans(abs(temp.pol)))
+  
+  temp.ci <- apply(temp.rich - temp.poor, MARGIN = 1, function(x) quantile(x, c(0.025, 0.975)))
+  polarization_tab$signif[i] <- sum(!apply(temp.ci, MARGIN = 2, function(x) between(0, x[1], x[2])))
+  
+  polarization_tab$gilens[i] <- sum(abs(apply(temp.pol, MARGIN = 1, median)) > 0.1)
+  
+  temp.ci <- apply(temp.pol, MARGIN = 1, function(x) quantile(x, c(0.025, 0.975)))
+  polarization_tab$gilenssignif[i] <- sum(apply(temp.ci, MARGIN = 2, function(x) all(x > 0.1) | all(x < -0.1)))
+  
+  temp.10pt <- apply(temp.ci, MARGIN = 2, function(x) all(x > 0.1) | all(x < -0.1))
+  
+  temp.disagree <- abs(apply((temp.rich > 0.5) - (temp.poor > 0.5), MARGIN =  1, median))
+  
+  polarization_tab$disagree[i] <- sum(temp.disagree)
+  
+  polarization_tab$disagreegilens[i] <- sum(temp.disagree*as.numeric(temp.10pt))
+  
+  polarization_tab$n_quest[i] <- length(temp.issues)
+}
+
+
+# above creates the for loop to assign everything. 
+
+for (p in unique(polarization_tab$party)) {
+  i <- nrow(polarization_tab) + 1
+  polarization_tab[i,] <- NA
+  polarization_tab$topic_6[i] <- 'Total'
+  polarization_tab$party[i] <- p
+  
+  temp.pol <- get(paste0(polarization_tab$party[i], '_polarization_boot'))
+  
+  polarization_tab$avgpol[i] <- median(colMeans(abs(temp.pol)))
+  
+  for (v in c('signif', 'gilens', 'gilenssignif', 'disagree', 'disagreegilens', 'n_quest')) { 
+    polarization_tab[i,v] <- sum(polarization_tab[polarization_tab$party == p, v], na.rm = TRUE)
+  }
+}
+
+# above creates the for loop to assign things to the different columns, and looks at polarization, and the gilens metric. 
+
+# now creating the table itself 
+
+polarization_tab %>% 
+  select(party, topic_6, n_quest, avgpol, signif, gilens, disagreegilens) %>% 
+  arrange(party) %>%
+  mutate(party = case_when(party == 'rep' ~ 'Republicans',
+                           party == 'dem' ~ 'Democrats',
+                           party == 'all' ~ 'All Respondents'),
+         topic_6 = case_when(topic_6 == 'foreignpolicy' ~ 'Foreign policy',
+                             topic_6 == 'cultural' ~ 'Cultural',
+                             topic_6 == 'immigration' ~ 'Immigration',
+                             topic_6 == 'lawenforcement' ~ 'Law enforcement',
+                             topic_6 == 'economic' ~ 'Economic',
+                             topic_6 == 'socialwelfare' ~ 'Social welfare',
+                             TRUE ~ topic_6)) %>% 
+
+   mutate_at(vars(signif:disagreegilens), list(~ . / n_quest)) %>% 
+  mutate_if(is.numeric, round, 3) %>% 
+  mutate_at(vars(signif:disagreegilens), list(~ paste0(. * 100, '\\%'))) %>% 
+  mutate(party = cell_spec(party, angle = 90, format = 'latex')) %>% 
+  kable('latex', booktabs = TRUE, escape = FALSE, linesep = '\\addlinespace',
+        col.names = linebreak(c(' ', 'Policy\nDomain', 'Number of\nUnique Issues', 'Average\nOpinion Gap', 'Opinion Gap\nStatistically\nSignificant', 
+                                'Opinion Gap\nGreater than\n10 pts.', '10 pt. Gap +\nDisagreement\non Policy'),
+                              align = 'c'),
+        align = c('l', 'l', rep('c', ncol(.)-2))) %>% 
+  collapse_rows(1, latex_hline = 'major') %>% 
+  row_spec(c(7, 14, 21), bold = TRUE) %>% 
+    save_kable(file = "Table2.tex") 
+  
+# At the end here I save Table 2 as a text file, to include in the final paper. 
+
+```
+
+
+Next I am going to recreate the "Whites" table from the Appendix. This is Appendix I in their code, and Figure 9 in the supplementary information PDF. 
+
+Their properly recreate the data did not work. So everything for this table is being redone. At the end of recreating the table I will compare my results with their original results. 
+
+One of my initial concerns, or questions about this project was the amount of files that existed. This is the case because the amount of data, but also the size of that data. Every figure or piece of the article is different because each item requires so much data loading. So for each new figure, I am just going to clear my R again, instead of creating new files. 
+
+
+```{r}
+
+rm(list = ls())
+
+gc()
+
+```
+
+
+
+
+```{r}
+
+# Begin coding again. I will recreate their table first, using the data they provided. But I could not recreate this data from "scratch" with their code. 
+
+opinion_bootstrapped_noleaners_whites <- readRDS("~/Documents/\"Divided By Income\" Paper Project | R Directory/Divied By Income Replication Files/bootstrap_gaps_data/opinion_bootstrapped_noleaners_whites.RDS")
+
+opinion_bootstrapped_whites <- opinion_bootstrapped_noleaners_whites 
+
+source('~/Documents/"Divided By Income" Paper Project | R Directory/Divied By Income Replication Files/bootstrap_funs.R')
+
+# the code above loads in the functions, as well as their data.
+
+
+for (i in names(opinion_bootstrapped_whites)) { 
+  assign(paste0(i, '_whites'), opinion_bootstrapped_whites[[i]]) 
+}
+
+# Create polarization matrices
+dem_polarization_boot_whites <- abs(dem_inctop_10_whites - dem_incbottom_10_whites)
+rep_polarization_boot_whites <- abs(rep_inctop_10_whites - rep_incbottom_10_whites)
+all_polarization_boot_whites <- abs(all_inctop_10_whites - all_incbottom_10_whites)
+
+# Table - white only
+polarization_tab_whites <- data.frame(expand.grid(party = c('rep', 'dem', 'all'),
+                                                  topic_6 = unique(issuetopics_whites$topic_6),
+                                                  stringsAsFactors = FALSE),
+                                      avgpol = NA,
+                                      signif = NA,
+                                      gilens = NA,
+                                      gilenssignif = NA,
+                                      disagree = NA,
+                                      disagreegilens = NA,
+                                      n_quest = NA,
+                                      stringsAsFactors = FALSE)
+
+# Loop over the rows to fill polarization_tab_whites
+for (i in 1:nrow(polarization_tab_whites)) { 
+  temp.issues <- issuetopics_whites$question[issuetopics_whites$topic_6 == polarization_tab_whites$topic_6[i]] 
+  temp.rich <- get(paste0(polarization_tab_whites$party[i], '_inctop_10_whites')) 
+  temp.rich <- temp.rich[rownames(temp.rich) %in% temp.issues,] 
+  temp.poor <- get(paste0(polarization_tab_whites$party[i], '_incbottom_10_whites')) 
+  temp.poor <- temp.poor[rownames(temp.poor) %in% temp.issues,] 
+  temp.pol <- get(paste0(polarization_tab_whites$party[i], '_polarization_boot_whites')) 
+  temp.pol <- temp.pol[rownames(temp.pol) %in% temp.issues,] 
+
+  # Average polarization
+  polarization_tab_whites$avgpol[i] <- median(colMeans(temp.pol)) 
+
+  # Confidence intervals and significance
+  temp.ci <- apply(temp.rich - temp.poor, MARGIN = 1, function(x) quantile(x, c(0.025, 0.975))) 
+  polarization_tab_whites$signif[i] <- sum(!apply(temp.ci, MARGIN = 2, function(x) between(0, x[1], x[2]))) 
+
+  # Gilens-related metrics
+  polarization_tab_whites$gilens[i] <- sum(apply(temp.pol, MARGIN = 1, median) > 0.1) 
+  temp.ci <- apply(temp.pol, MARGIN = 1, function(x) quantile(x, c(0.025, 0.975))) 
+  polarization_tab_whites$gilenssignif[i] <- sum(apply(temp.ci, MARGIN = 2, function(x) all(x > 0.1) | all(x < -0.1)))
+
+  # 10 point gap metrics
+  temp.10pt <- apply(temp.ci, MARGIN = 2, function(x) all(x > 0.1) | all(x < -0.1)) 
+  temp.disagree <- abs(apply((temp.rich > 0.5) - (temp.poor > 0.5), MARGIN =  1, median)) 
+
+  # Disagreement metrics
+  polarization_tab_whites$disagree[i] <- sum(temp.disagree) 
+  polarization_tab_whites$disagreegilens[i] <- sum(temp.disagree * as.numeric(temp.10pt)) 
+
+  # Number of questions
+  polarization_tab_whites$n_quest[i] <- length(temp.issues) 
+}
+
+# Summing over party categories (rep, dem, all)
+for (p in unique(polarization_tab_whites$party)) { 
+  i <- nrow(polarization_tab_whites) + 1 
+  polarization_tab_whites[i,] <- NA 
+  polarization_tab_whites$topic_6[i] <- 'Total' 
+  polarization_tab_whites$party[i] <- p 
+
+  temp.pol <- get(paste0(polarization_tab_whites$party[i], '_polarization_boot_whites')) 
+  polarization_tab_whites$avgpol[i] <- median(colMeans(temp.pol)) 
+
+  # Summing other metrics for total party
+  for (v in c('signif', 'gilens', 'gilenssignif', 'disagree', 'disagreegilens', 'n_quest')) { 
+    polarization_tab_whites[i, v] <- sum(polarization_tab_whites[polarization_tab_whites$party == p, v], na.rm = TRUE) 
+  } 
+}
+
+# Final table formatting and output
+polarization_tab_whites %>% 
+  select(party, topic_6, n_quest, avgpol, signif, gilens, disagreegilens) %>% 
+  arrange(party) %>%
+  mutate(party = case_when(party == 'rep' ~ 'Republicans',
+                           party == 'dem' ~ 'Democrats',
+                           party == 'all' ~ 'All Respondents'),
+         topic_6 = case_when(topic_6 == 'foreignpolicy' ~ 'Foreign policy',
+                             topic_6 == 'cultural' ~ 'Cultural',
+                             topic_6 == 'immigration' ~ 'Immigration',
+                             topic_6 == 'lawenforcement' ~ 'Law enforcement',
+                             topic_6 == 'economic' ~ 'Economic',
+                             topic_6 == 'socialwelfare' ~ 'Social welfare',
+                             TRUE ~ topic_6)) %>%
+  mutate_at(vars(signif:disagreegilens), list(~ . / n_quest)) %>%
+  mutate_if(is.numeric, round, 3) %>%
+  mutate_at(vars(signif:disagreegilens), list(~ paste0(. * 100, '\\%'))) %>%
+  mutate(party = cell_spec(party, angle = 90, format = 'latex')) %>%
+  kable('latex', booktabs = TRUE, escape = FALSE, linesep = '\\addlinespace',
+        col.names = linebreak(c(' ', 'Policy\nDomain', 'Number of\nUnique Issues', 'Average\nOpinion Gap', 'Opinion Difference\nStatistically\nSignificant', 
+                                'Opinion Gap\nGreater than\n10 pts.', '10 pt. Gap +\nDisagreement\non Outcome'), 
+                              align = 'c'),
+        align = c('l', 'l', rep('c', ncol(.)-2))) %>%
+  collapse_rows(1, latex_hline = 'major') %>%
+  row_spec(c(7, 14, 21), bold = TRUE) %>%
+  save_kable(file = 'whites_only_table_original.tex')
+```
+
+
+Now I am going to recreate the whites table, but with my own coding because in the future I want to compare races. But their code is giving issues with doing so that, so I have to re-write/re-work it. The reason I am going to compare is because the size of the data is so large, and quite cumbersome, that I have re-sample the data, and work with a smaller size data. In the future I can run the code, either theirs or mine on a cluster, when this project reaches more advanced stages. 
+
+Below i the code for the "new" bootstrap
+
+```{r}
+# load in original cleaned data
+
+cces_allyears <- readRDS("~/Documents/\"Divided By Income\" Paper Project | R Directory/Divied By Income Replication Files/cces_data/cces_allyears.RDS")
+
+# New Bootstrap code and sampling 
+
+bootstrap_cces_summary <- function(cces_allyears, race_group = "White", n_samples = 10000, seed = 1234) {
+  
+  #seed for reproducibility
+  set.seed(1234)
+
+  get_resampled_stats <- function(subgroup_data) {
+ 
+    resampled_data <- subgroup_data %>%
+      sample_n(n_samples, replace = TRUE)
+    
+
+    resampled_data <- resampled_data %>%
+      mutate(
+        rich = if_else(faminc >= quantile(faminc, 0.9, na.rm = TRUE), 1, 0),  # Top 10% of income
+        poor = if_else(faminc <= quantile(faminc, 0.1, na.rm = TRUE), 1, 0)   # Bottom 10% of income
+      )
+
+    mean_opinion_per_topic <- resampled_data %>%
+      group_by(topic_6) %>%
+      summarize(mean_opinion = mean(opinion, na.rm = TRUE),
+                num_questions = n_distinct(question),
+                .groups = 'drop')
+    
+ 
+    opinion_gap <- resampled_data %>%
+      group_by(topic_6) %>%
+      summarize(
+        mean_opinion_rich = mean(opinion[rich == 1], na.rm = TRUE),
+        mean_opinion_poor = mean(opinion[poor == 1], na.rm = TRUE),
+        abs_diff = abs(mean_opinion_rich - mean_opinion_poor),  
+        abs_diff_se = sd(opinion[rich == 1] - opinion[poor == 1], na.rm = TRUE) / sqrt(n_samples) * 100,
+        conf_interval_95 = 1.96 * abs_diff_se,
+        .groups = 'drop'
+      ) %>%
+      select(topic_6, abs_diff, conf_interval_95)
+    
+ 
+    gilens_gap <- resampled_data %>%
+      group_by(topic_6, question) %>%
+      summarize(mean_opinion_rich = mean(opinion[rich == 1], na.rm = TRUE),
+                mean_opinion_poor = mean(opinion[poor == 1], na.rm = TRUE), .groups = 'drop') %>%
+      mutate(gap = abs(mean_opinion_rich - mean_opinion_poor)) %>%
+      group_by(topic_6) %>%
+      summarize(gilens_gap_pct = mean(gap > 0.1, na.rm = TRUE) * 100, .groups = 'drop')
+    
+   
+    gilens_diff_answer <- resampled_data %>%
+      group_by(topic_6, question) %>%
+      summarize(mean_opinion_rich = mean(opinion[rich == 1], na.rm = TRUE),
+                mean_opinion_poor = mean(opinion[poor == 1], na.rm = TRUE), .groups = 'drop') %>%
+      mutate(different_answers = if_else(mean_opinion_rich > 0.5 & mean_opinion_poor < 0.5, 1, 
+                                         if_else(mean_opinion_rich < 0.5 & mean_opinion_poor > 0.5, 1, 0))) %>%
+      group_by(topic_6) %>%
+      summarize(gilens_diff_answer_pct = mean(different_answers, na.rm = TRUE) * 100, .groups = 'drop')
+    
+  
+    combined_table <- mean_opinion_per_topic %>%
+      left_join(opinion_gap, by = "topic_6") %>%
+      left_join(gilens_gap, by = "topic_6") %>%
+      left_join(gilens_diff_answer, by = "topic_6")
+    
+    return(combined_table)
+  }
+  
+  # Resample and calculate statistics for All Whites, White Democrats, and White Republicans
+  
+  # All Whites
+  all_whites_data <- cces_allyears %>%
+    filter(race_new == race_group)
+  all_whites_results <- get_resampled_stats(all_whites_data) %>%
+    mutate(group = "All Whites")
+  
+  # White Democrats
+  white_democrats_data <- cces_allyears %>%
+    filter(race_new == race_group, pid3 == "Democrat")
+  white_democrats_results <- get_resampled_stats(white_democrats_data) %>%
+    mutate(group = "White Democrats")
+  
+  # White Republicans
+  white_republicans_data <- cces_allyears %>%
+    filter(race_new == race_group, pid3 == "Republican")
+  white_republicans_results <- get_resampled_stats(white_republicans_data) %>%
+    mutate(group = "White Republicans")
+  
+  # Combine 
+  combined_results <- bind_rows(
+    all_whites_results,
+    white_democrats_results,
+    white_republicans_results
+  )
+  
+
+  aggregate_results <- combined_results %>%
+    group_by(group) %>%
+    summarize(
+      mean_opinion = mean(mean_opinion, na.rm = TRUE),
+      abs_diff = mean(abs_diff, na.rm = TRUE),
+      conf_interval_95 = mean(conf_interval_95, na.rm = TRUE),
+      gilens_gap_pct = mean(gilens_gap_pct, na.rm = TRUE),
+      gilens_diff_answer_pct = mean(gilens_diff_answer_pct, na.rm = TRUE),
+      num_questions = sum(num_questions),  # Sum of unique questions across all topics
+      .groups = 'drop'
+    ) %>%
+    mutate(topic_6 = "All Topics")  # Label the aggregate row as "All Topics"
+  
+
+  final_results <- bind_rows(
+    combined_results,
+    aggregate_results
+  )
+  
+  return(final_results)
+}
+
+
+white_results_combined <- bootstrap_cces_summary(cces_allyears, race_group = "White", n_samples = 10000, seed = 1234)
+
+
+print(white_results_combined)
+```
+
+
+Code to create all whites table, from my data
+
+```{r}
+
+
+# Rename and reorder columns, round numeric values to 3 digits, and clean topic names
+white_results_cleaned <- white_results_combined %>%
+  rename(
+    "Group" = group,
+    "Topic" = topic_6,
+    "Number of Questions" = num_questions,
+    "Absolute Difference" = abs_diff,
+    "95% Confidence Interval" = conf_interval_95,
+    "Gilens Gap Percentage" = gilens_gap_pct,
+    "Gilens Different Answer Percentage" = gilens_diff_answer_pct
+  ) %>%
+  mutate(
+    Topic = case_when(
+      Topic == "cultural" ~ "Cultural",
+      Topic == "lawenforcement" ~ "Law Enforcement",
+      Topic == "immigration" ~ "Immigration",
+      Topic == "socialwelfare" ~ "Social Welfare",
+      Topic == "foreignpolicy" ~ "Foreign Policy",
+      Topic == "economic" ~ "Economic",
+      TRUE ~ Topic
+    )
+  ) %>%
+  mutate(across(where(is.numeric), ~ round(., 3))) %>%
+  select(Group, Topic, `Number of Questions`, `Absolute Difference`,
+         `95% Confidence Interval`, `Gilens Gap Percentage`, `Gilens Different Answer Percentage`)
+
+white_results_grouped <- white_results_cleaned %>%
+  arrange(
+    factor(Group, levels = c("All Whites", "White Democrats", "White Republicans")),
+    desc(Topic == "All Topics")
+  )
+
+
+group_indices <- white_results_grouped %>%
+  mutate(Row = row_number()) %>%
+  group_by(Group) %>%
+  summarise(Start = min(Row), End = max(Row)) %>%
+  arrange(factor(Group, levels = c("All Whites", "White Democrats", "White Republicans")))
+
+# Generate the LaTeX table
+
+latex_table <- white_results_grouped %>%
+  kable(
+    format = "latex",
+    caption = "Bootstrap Results for All Whites, White Democrats, and White Republicans",
+    booktabs = TRUE
+  ) %>%
+  kable_styling(latex_options = c("striped", "hold_position")) %>%
+  add_header_above(c(" " = 1, "Economic Opinions Analysis" = 6)) %>%
+  group_rows("All Whites", group_indices$Start[1], group_indices$End[1]) %>%
+  group_rows("White Democrats", group_indices$Start[2], group_indices$End[2]) %>%
+  group_rows("White Republicans", group_indices$Start[3], group_indices$End[3])
+
+
+white_results_grouped %>%
+  kable(
+    format = "latex",
+    caption = "Bootstrap Results for All Whites, White Democrats, and White Republicans"
+  ) %>%
+  kable_styling("striped", full_width = FALSE) %>%
+  column_spec(1, width = "20em") %>%
+  column_spec(2:7, width = "15em") %>%
+  add_header_above(c(" " = 1, "Economic Opinions Analysis" = 6)) %>%
+  group_rows("All Whites", group_indices$Start[1], group_indices$End[1]) %>%
+  group_rows("White Democrats", group_indices$Start[2], group_indices$End[2]) %>%
+  group_rows("White Republicans", group_indices$Start[3], group_indices$End[3])
+
+output_file <- "whites_only_new_data.tex"
+writeLines(latex_table, con = output_file)
+
+# for the final table in the final paper I am just going to actually just copy their LaTeX table code and fill in my data. 
+
+```
+
+
+EXTRA THINGS 
+
+I explored potentially using regressions to look at some questions or hypotheses as a soloution to not being able to fully look at the data or all the tables, but this was not fully successful / felt superficial. 
+
+```{r}
+# Clear all objects in the environment
+rm(list = ls())
+
+# Clear memory and force garbage collection to free up memory
+gc()
+
+# In a separate R Project I widened out the data ahead of time. So I will load that in. This makes it easier to run regressions
+
+wide_data <- readRDS("~/Documents/\"Divided By Income\" Paper Project | R Directory/wide_data.rds")
+
+wide_data <- wide_data %>%
+  mutate(race_new = as.factor(race_new),
+         pid3 = as.factor(pid3),
+         immigration_borderpatrol = as.factor(immigration_borderpatrol),
+         budget_firstraisetaxes = as.factor(budget_firstraisetaxes),
+         healthcare_voteforaca = as.factor(healthcare_voteforaca))
+
+
+wide_data_filtered <- wide_data %>%
+  filter(pid3 %in% c("Democrat", "Republican")) %>%
+  sample_n(100000)
+
+wide_data_filtered$race_new <- relevel(wide_data_filtered$race_new, ref = "White")
+
+# ref group is white + dem 
+
+table(wide_data_filtered$pid3)
+
+
+# border patrol
+
+model_borderpatrol <- glm(immigration_borderpatrol ~ faminc + race_new + pid3, 
+                          data = wide_data_filtered, 
+                          family = binomial)
+summary(model_borderpatrol)
+
+#gist: Income has a significant negative effect, meaning wealthier individuals are less likely to support stricter border patrol policies.
+	# Race: Black individuals are more likely to support stricter border patrol policies, while Hispanic individuals are less likely to support such policies.
+	# Party affiliation is the most significant predictor, with Republicans being far more likely to support stricter border patrol policies compared to Democrats.
+
+
+
+#healthcare 
+
+model_healthcare <- glm(healthcare_voteforaca ~ faminc + race_new + pid3, 
+                        data = wide_data_filtered, 
+                        family = binomial)
+
+
+summary(model_healthcare)
+
+# gist: 	Income has a significant positive effect on the likelihood of supporting ACA, meaning wealthier individuals are more likely to support it.
+	# Party affiliation has the largest effect, with Republicans showing a strong opposition to ACA.
+	# The effects of race are less clear, as none of the race categories show statistically significant results in this model, except for Asian, which has a marginally positive but non-significant effect.
+
+#raise tax 
+
+model_budget <- glm(budget_firstraisetaxes ~ faminc + race_new + pid3, 
+                    data = wide_data_filtered, 
+                    family = binomial)
+summary(model_budget)
+
+#gist: Income has a negative effect on the probability of supporting the budget tax increase, Asians are less likely to than whites to support this by a smidgen, hispanics and blacks are similar. Republican respondents are significantly less likely to support the tax increase (p-value < 0.001), as evidenced by the negative and large coefficient. This suggests that party affiliation plays a strong role, with Republicans less likely to endorse tax increases compared to Democrats.
+
+
+```
+
+Running one more regression for ECONOMIC policies/question topics
+
+```{r}
+
+wide_data <- wide_data %>%
+  mutate(race_new = as.factor(race_new),
+         pid3 = as.factor(pid3),
+         immigration_borderpatrol = as.factor(immigration_borderpatrol),
+         budget_firstraisetaxes = as.factor(budget_firstraisetaxes),
+         healthcare_voteforaca = as.factor(healthcare_voteforaca))
+
+
+wide_data_filtered <- wide_data %>%
+  filter(pid3 %in% c("Democrat", "Republican")) %>%
+  sample_n(100000)
+
+wide_data_filtered$race_new <- relevel(wide_data_filtered$race_new, ref = "White")
+
+economic_data <- wide_data_filtered %>% 
+  filter(grepl('economic', topic_6, ignore.case = TRUE))
+
+economic_columns <- grep('economic', names(wide_data_filtered), value = TRUE, ignore.case = TRUE)
+
+wide_data_filtered$average_economic <- rowMeans(wide_data_filtered[economic_columns], na.rm = TRUE)
+
+head(wide_data_filtered)
+
+#econ reg
+
+model_econ <- glm(average_economic ~ faminc + race_new + pid3, 
+                    data = wide_data_filtered, 
+                    family = binomial)
+summary(model_econ)
+
+#gist: inconclusive results, nothing stat. sig.. But creating an economic policy score/metric then running a regression on that could be useful/lead to results? 
+```
+
+
+

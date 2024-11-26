@@ -1,0 +1,314 @@
+---
+title: 'Research Note: Discussion of and Proposed Additions to "_Divided by Income? Policy Preferences of the Rich and Poor Within the Democratic and Republican Parties_"'
+author:
+    - 'Nicholas R. Gonzalez^[Phd Student. Northwestern University. Email: <NicholasGonzalez2029@northwestern.edu>]'
+date: November 25, 2024 
+date-format: long
+abstract: \singlespacing This paper looks to serve as research note to "Divided by Income? Policy Preferences of the Rich and Poor Within the Democratic and Republican Parties", an article published in April 2024, by Michael Auslen and Justin H. Phillips. The objective of this research note is to examine, and evaluate the methods used in the article, as well as attempt to replicate their findings. Then, this paper also begins to engage in a conversation about what expansions, and additional contributions would grow the existing conversations within the original article. 
+format: 
+     pdf:
+       documentclass: article 
+fontsize: 12pt
+number-sections: true # automatic section numbering
+urlcolor: blue # highlight links
+bibliography: rep_paper_citations.bib
+link-citations: true  
+geometry: # margins
+      - left=1in
+      - right=1in
+      - top=1in
+      - bottom=1in
+header-includes:
+    # Line spacing
+    - \usepackage{makecell}
+    - \usepackage{multirow}
+    - \usepackage[table,xcdraw]{xcolor}
+    - \usepackage{setspace}
+    - \doublespacing
+    # Figures and tables always on top of page
+    - \usepackage{float}
+    - \floatplacement{figure}{t}
+    - \floatplacement{table}{t}
+    # Tables and figures appear after they are mentioned
+    - \usepackage{flafter}
+    # Figure stays within their section
+    - \usepackage[section]{placeins}
+---
+
+```{r setup, include=FALSE}
+# Here you customize global options for how
+# code will translate into the PDF
+# It won't show in the document
+library(knitr)
+opts_chunk$set(echo = FALSE, 
+               message = FALSE, 
+               warning = FALSE, 
+               results = "asis", 
+               out.width = "100%")
+
+# Load additional R packages here
+library(tidyverse) # Data manipulation
+library(tinytable) # tables
+```
+
+
+\newpage
+
+# Introduction
+
+Within the field of American politics, polarization, partisanship, and public opinion have been at the heart of academic discussion for more than a decade. Seminal works on polarization, party sorting, and in general partisan party politics have changed the way we look at politics within the United States [@mccarty_polarization_2019; @fiorina_unstable_2017; @tesler_post-racial_2016]. However, new scholarship, looking at the political opinion differences of Americans on the basis of income, has begun to expand how we examine people's opinions within their own party. In a paper by Michael Auslen and Justin H. Phillips, titled _"Divided by Income? Policy Preferences of the Rich and Poor Within the Democratic and Republican Parties"_ highlights the drastic opinion gap within each American political party, that exists between low- and high-income respondents to the Cooperative Election Study [@auslen_divided_2024]^[The Cooperative Election Study, also known as CES, is a election study ran by Harvard University]. With that said, the objective of this research note is to highlight how this project has analyzed the methods and computational social science tactics used by Auslen and Phillips to work towards replicating their findings, as well as discuss ways their research might best be built upon. 
+
+
+When examining the paper "Divided by Income? Policy Preferences of the Rich and Poor Within the Democratic and Republican Parties,”  we see the findings by the original authors to be straightforward. The two scholars develop what is understood as the _opinion gap_, which is defined as the absolute value of the mean opinion of high-income voters within a political party minus the mean opinion of low-income voters. There is a sizeable gap between the democratic and republican parties. However, the democratic party maintains a greater margin than republicans in the original findings. The findings of the original paper begin by highlighting how we might think about partisan politics from a new perspective. This is because, despite both parties having members from higher- and lower-income classes, a valley of difference exists in the political preferences of those separate groups. While traditionally, this economic divide is understood to exist in general in politics, conventional wisdom has suggested that people are divided by party and that lower-income people vote for democrats, and higher-income people vote for the republicans. It also posits that cultural politics and social ideologies make up a great deal of this partisan sorting. However, while their paper does make this claim outright, their results paint a picture in which the level of polarization within the United States has shifted this paradigm of the rich versus the poor to now exist at the intra-party level.   
+
+
+This research note, or replication paper, has three primary goals. The first was an attempt to replicate parts of the original study. The article published in _Political Behavior_ presents dozens of figures and works with a data set of over 17m of observations. While the provided replication files were thorough, it felt it was best to replicate the areas of the original study that was of most interest. Which for this project were the findings among all respondents, as well as the findings when looking at only white respondents. This is because this paper is interested in two primary items. Those being the level in which partisan sorting, is now replacing political sorting by income. As well as wanted to look at the racial cleaves of the original paper, with greater detail, as they only briefly examine them in original article. This paper will then engage in a methodological discussion about the original paper, and work towards hypothesizing potential additions to this scholarship, continuing to open up the idea that political paradigms on the basis of income have now moved to an intra-party level. Finally, the paper is concluded with a discussion, largely focused on existing literature.
+
+
+The replication of the original paper was successful in some respects and failed in others. The scope of the original project created some barriers in being able to successfully achieve everything this project initially set out to do. Auslen and Phillips’ paper can be replicated in its entirety if the focus is on re-presenting the original findings. However, attempting to recreate the data itself or add it to the data is where the issues lay. This is because how computationally intensive the data and the project is, as well as how complex the project is structured. This is elaborated on in greater detail in the following sections. Taking the latter into account, this is precisely why this project only begins to posit new questions and ideas about the original scholarship, rather than looking to test them and uncover whether these ideas are indeed true. Nonetheless, this project appears to be a positive first step in the direction of deeper inquiry into partisan sorting and income. 
+
+
+# Methods
+
+The article by Auslen and Phillips was methodologically intensive. The two authors worked through eight years of Cooperative Election Study data to clean a final dataset for their analysis. This cleaned dataset contains unique questions from every year of the CES survey. The article removed duplicates of each question, only keeping the data from the most recent year it was asked, in order to avoid specific questions carrying more weight. An example is "Do you support raising the minimum wage to $X?" This question was asked in every iteration of the Cooperative Election Study. Maintaining every version of this question and their subsequent responses may artificially weigh the final results.  
+
+
+$$
+Gap_{Party} = \left| \overline{Support}_{Party}^{Rich} - \overline{Support}_{Party}^{Poor} \right|
+$$
+
+
+
+The primary result or contribution of this study is its opinion gap metric. The opinion gap is broadly defined as the absolute value of the mean opinion of one group subtracted by that of another group. The above formula shows the opinion gap structured in the way Auslen and Phillips use it, which is the absolute value of the mean opinion of high-income republicans minus that of high-income republicans. As this paper will discuss in the proposed expansion section, there are other ways to utilize the statistics developed by the original authors. Examples of how one could re-purpose their metric are below.  
+
+$$
+Gap_{Race,Party} = \left| \overline{Support}_{Race,Party}^{Rich} - \overline{Support}_{Race,Party}^{Poor} \right|
+$$
+
+$$
+Gap_{Race,Party} = \left| \overline{Support}_{Race,Party}^{Rich} - \overline{Support}_{Race,Party}^{Rich} \right|
+$$
+
+$$
+Gap_{Race,Party} = \left| \overline{Support}_{Race,Party}^{Poor} - \overline{Support}_{Race,Party}^{Poor} \right|
+$$
+
+In many of the final results tables in the original article, the authors also highlight other complimentary statistics besides the opinion gap. These are the share of policy questions for which the difference in opinion between chosen respondents is greater than zero at the 95-percent level of statistical significance. This is identified in the article as columns with the title "Opinion gap statistically significant.” The article also highlights what the authors have labeled as the "Gilen's gap,” and the "Gilen's gap plus a disagreement on policy,” which in the presented tables is labeled as "Opinion gap greater than 10 pts" and "10 pt. gap + disagreement on policy." The "Gilen's gap" is defined as "instances in which the opinion gap between the top and bottom deciles is greater than 10 percentage points". Then, disagreement in policy is defined by one group being greater or less than the average of .50, while the other is the inverse. This definition of difference leverages the neutrality of  binary measurements to identify potential disagreements. However, because the structure of the data is developed to only look at the opinion gap(s), we do not have an additional context in which specific disagreements occur.   
+
+The project also used bootstrapped samples and bootstrapping procedures. Its computational methods and techniques used to achieve a successful output of these results for the items of data the article measures, or looks at, were conducted in R, as well as with a computing cluster. They ran their bootstrap several times to obtain a high level of precision for their results. The decision to use a cluster was also made based on the size of the dataset, amassing over 17 million observations. Their bootstrapping procedure and the use of the cluster address some of the concerns regarding the validity of the article’s findings. The first being that the drawing of respondents to different income groups or classes might have influenced the analyses through sensitivity. The second being that the opinion gap metric prohibits users from coming up with standard errors. 
+
+The original authors suggest that their use of bootstrapping procedures and the cluster helps alleviate these issues because each bootstrap has a sampling distribution of 1,000, and for each sample, the high- and low-income groups were reassigned.  The original methods used for "Divided by Income? Policy Preferences of the Rich and Poor Within the Democratic and Republican Parties" are thorough, but do not come without issues. To begin with, the complexity of the procedures conducted by Auslen and Phillips made it difficult to replicate or expand upon their scholarship. This is something that this study has experienced directly. There is also some uncertainty regarding the necessity to bootstrap every iteration of the data, as opposed to the total data, and then run analyses. Some scholars have suggested that the complexity of a method is often superfluous [@achen_t_2002]. However, it is worth stating their final analysis, and the presentation of the results is straightforward and easily digestible.     
+
+
+However, one last methodological point of contention, or data specificity, is the sample of high-income respondents. For blacks, _n_ is approximately 2,000, as opposed to over 20,000 for whites. This makes it more difficult to arrive at conclusions when analyzing race as a variable. Specifically for non-white groups. In the data, some specific questions had as few as eight unique responses from high-income blacks. However, this is a broader consequence of income inequality in the United States. The original CES data included weights in their final output, but it is not apparent that Auslen and Phillips utilize these weights. Further work with the cleaned dataset by Auslen and Phillips may find it useful to incorporate these weights or work towards a solution to alleviate this sampling issue beyond bootstrapping, such as imputating data. Another potential solution to generate more data is through CASE, which stands for Complete, Available, Supplement, Exclude. One could also argue that starting fresh with the data, but looking at the same questions using a different method, may be fruitful as well. There is also newer data released by the Cooperative Election Study project, but with the _n_ already being so great, it is unlikely additional data would greatly change the results. 
+
+# Replication Results  
+
+This study successfully recreated Figure 2 and Table 2 from the original article and Table A9 from the appendix. The code provided by the original researchers allowed for straightforward completion of these items. They are presented at the below, renamed as Figure 1, Table 1 and Table 2. For them to be inserted into this project, the original codes were changed slightly to be exported as LaTeX tables. Since these items were all replicated with the authors’ original data, the results are exactly the same.   
+
+
+\begin{table}[ht]
+\caption{All policy domains and all respondents}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{llccccc}
+\toprule
+  & \makecell[c]{Policy\\Domain} & \makecell[c]{Number of\\Unique Issues} & \makecell[c]{Average\\Opinion Gap} & \makecell[c]{Opinion Gap\\Statistically\\Significant} & \makecell[c]{Opinion Gap\\Greater than\\10 pts.} & \makecell[c]{10 pt. Gap +\\Disagreement\\on Policy}\\
+\midrule
+ & Law enforcement & 16 & 0.041 & 62.5\% & 6.2\% & 0\%\\
+
+ & Immigration & 22 & 0.054 & 86.4\% & 18.2\% & 0\%\\
+
+ & Cultural & 18 & 0.069 & 88.9\% & 33.3\% & 11.1\%\\
+
+ & Economic & 45 & 0.075 & 88.9\% & 31.1\% & 4.4\%\\
+
+ & Social welfare & 20 & 0.106 & 100\% & 40\% & 15\%\\
+
+ & Foreign policy & 23 & 0.116 & 87\% & 60.9\% & 21.7\%\\
+
+\textbf{\multirow{-7}{*}{\raggedright\arraybackslash \rotatebox{90}{All Respondents}}} & \textbf{Total} & \textbf{144} & \textbf{0.078} & \textbf{86.8\%} & \textbf{32.6\%} & \textbf{8.3\%}\\
+\cmidrule{1-7}
+ & Law enforcement & 16 & 0.139 & 100\% & 62.5\% & 6.2\%\\
+
+ & Immigration & 22 & 0.131 & 90.9\% & 68.2\% & 9.1\%\\
+
+ & Cultural & 18 & 0.158 & 94.4\% & 72.2\% & 11.1\%\\
+
+ & Economic & 45 & 0.138 & 86.7\% & 66.7\% & 15.6\%\\
+
+ & Social welfare & 20 & 0.123 & 100\% & 50\% & 5\%\\
+
+ & Foreign policy & 23 & 0.179 & 87\% & 69.6\% & 26.1\%\\
+
+\textbf{\multirow{-7}{*}{\raggedright\arraybackslash \rotatebox{90}{Democrats}}} & \textbf{Total} & \textbf{144} & \textbf{0.144} & \textbf{91.7\%} & \textbf{65.3\%} & \textbf{13.2\%}\\
+\cmidrule{1-7}
+ & Law enforcement & 16 & 0.086 & 81.2\% & 37.5\% & 6.2\%\\
+
+ & Immigration & 22 & 0.067 & 59.1\% & 22.7\% & 0\%\\
+
+ & Cultural & 18 & 0.096 & 77.8\% & 44.4\% & 0\%\\
+
+ & Economic & 45 & 0.121 & 88.9\% & 60\% & 13.3\%\\
+
+ & Social welfare & 20 & 0.155 & 85\% & 75\% & 15\%\\
+
+ & Foreign policy & 23 & 0.079 & 73.9\% & 26.1\% & 0\%\\
+
+\textbf{\multirow{-7}{*}{\raggedright\arraybackslash \rotatebox{90}{Republicans}}} & \textbf{Total} & \textbf{144} & \textbf{0.104} & \textbf{79.2\%} & \textbf{46.5\%} & \textbf{6.9\%}\\
+\bottomrule
+\end{tabular}%
+}
+\end{table}
+
+
+
+
+\begin{table}[ht]
+\caption{All policy domains for White respondents}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{llccccc}
+\toprule
+  & \makecell[c]{Policy\\Domain} & \makecell[c]{Number of\\Unique Issues} & \makecell[c]{Average\\Opinion Gap} & \makecell[c]{Opinion Difference\\Statistically\\Significant} & \makecell[c]{Opinion Gap\\Greater than\\10 pts.} & \makecell[c]{10 pt. Gap +\\Disagreement\\on Outcome}\\
+\midrule
+ & Law enforcement & 16 & 0.041 & 62.5\% & 6.2\% & 0\%\\
+
+ & Immigration & 22 & 0.054 & 86.4\% & 18.2\% & 0\%\\
+
+ & Cultural & 18 & 0.069 & 83.3\% & 33.3\% & 11.1\%\\
+
+ & Economic & 45 & 0.075 & 86.7\% & 31.1\% & 4.4\%\\
+
+ & Social welfare & 20 & 0.106 & 100\% & 40\% & 15\%\\
+
+ & Foreign policy & 23 & 0.116 & 87\% & 56.5\% & 21.7\%\\
+
+\textbf{\multirow{-7}{*}{\raggedright\arraybackslash \rotatebox{90}{All Respondents}}} & \textbf{Total} & \textbf{144} & \textbf{0.078} & \textbf{85.4\%} & \textbf{31.9\%} & \textbf{8.3\%}\\
+\cmidrule{1-7}
+ & Law enforcement & 16 & 0.118 & 93.8\% & 68.8\% & 0\%\\
+
+ & Immigration & 22 & 0.144 & 95.5\% & 68.2\% & 4.5\%\\
+
+ & Cultural & 18 & 0.133 & 94.4\% & 66.7\% & 0\%\\
+
+ & Economic & 45 & 0.127 & 80\% & 68.9\% & 13.3\%\\
+
+ & Social welfare & 20 & 0.125 & 95\% & 50\% & 5\%\\
+
+ & Foreign policy & 23 & 0.151 & 87\% & 60.9\% & 13\%\\
+
+\textbf{\multirow{-7}{*}{\raggedright\arraybackslash \rotatebox{90}{Democrats}}} & \textbf{Total} & \textbf{144} & \textbf{0.133} & \textbf{88.9\%} & \textbf{64.6\%} & \textbf{7.6\%}\\
+\cmidrule{1-7}
+ & Law enforcement & 16 & 0.088 & 87.5\% & 31.2\% & 12.5\%\\
+
+ & Immigration & 22 & 0.066 & 68.2\% & 22.7\% & 4.5\%\\
+
+ & Cultural & 18 & 0.099 & 77.8\% & 50\% & 0\%\\
+
+ & Economic & 45 & 0.123 & 88.9\% & 60\% & 17.8\%\\
+
+ & Social welfare & 20 & 0.151 & 90\% & 65\% & 15\%\\
+
+ & Foreign policy & 23 & 0.071 & 73.9\% & 17.4\% & 0\%\\
+
+\textbf{\multirow{-7}{*}{\raggedright\arraybackslash \rotatebox{90}{Republicans}}} & \textbf{Total} & \textbf{144} & \textbf{0.103} & \textbf{81.9\%} & \textbf{43.8\%} & \textbf{9.7\%}\\
+\bottomrule
+\end{tabular}%
+}
+\end{table}
+
+
+
+As the authors highlight in their original piece, there is a large opinion gap at the intra-party level for both the Republican and Democrat parties. This gap persists across all cleavages, as the authors show in the main article and the appendix. Their findings have important implications for the growing literature on representational inequality. This study maintains this notion. Other scholars also highlight this issue of representational inequality, arguing that high-income individuals often have their policy preferences more closely aligned with legislative actions than lower-income people or groups [@gilens_testing_2014]. All these findings remain the same for replication, as when using their data, the results were the same. As discussed before, the paper's findings can also be interpreted in a way that grows our knowledge about polarization. That being that the income divide in politics is now an intra-party problem, not an inter-party one. 
+
+This study began to encounter issues when attempting to reproduce data for the opinion gap, among other metrics, for each specific race featured in the Cooperative Election Study. The original code provided by principal researchers cannot be successfully run on a personal device with significant changes. Tweaks and various iterations of the original code within R produced varied results, sometimes including good data, but no labeling rendered the results unidentifiable. Other instances produced all partial results or sometimes a nonfunctional product. To circumvent this, this project rewrote the code for Appendix Table A9 or for this projects Table 2. These tables focus on the results for only high-income whites, against low-income whites. For this to be successful, however, the original data that was cleaned by Auslen and Phillips were resampled to create a more manageable item to work with. The data was then bootstrapped for 100,000 iterations. The re-writing of the original code, resampling of the original dataset, and the much smaller number of iterations employed for this attempt to replicate the table from scratch produced drastically different results than the original scholarship.    
+
+
+
+\begin{table}[ht]
+\centering
+\caption{Bootstrap Results for All Whites, White Democrats, and White Republicans}
+\setlength{\tabcolsep}{6pt} % Adjust the column spacing
+\resizebox{0.9\textwidth}{!}{ % 100% of the page width
+\begin{tabular}{lcccccc}
+\toprule
+\multirow{2}{*}{\rotatebox{90}{\scalebox{0.8}{\textbf{Group}}}} & \makecell[c]{Policy\\Domain} & \makecell[c]{Number of\\Unique Issues} & \makecell[c]{Average\\Opinion Gap} & \makecell[c]{Opinion Difference\\Statistically\\Significant} & \makecell[c]{Opinion Gap\\Greater than\\10 pts.} & \makecell[c]{10 pt. Gap +\\Disagreement\\on Outcome} \\
+ &  &  &  &  &  &  \\ % Empty row for alignment, necessary after the header
+\midrule
+\addlinespace[0.3em]
+\multirow{7}{*}{\rotatebox{90}{\scalebox{0.8}{\textbf{All Whites}}}} 
+& Cultural & 18 & 0.007 & - & 55.556\% & 27.778\% \\
+ & Economic & 45 & 0.008 & - & 70.455\% & 27.273\% \\
+ & Foreign Policy & 23 & 0.005 & - & 57.143\% & 22.727\% \\
+ & Immigration & 22 & 0.012 & - & 60.000\% & 25.000\% \\
+ & Law Enforcement & 16 & 0.086 & - & 37.500\% & 18.750\% \\
+ & Social Welfare & 20 & 0.111 & - & 73.684\% & 26.316\% \\
+ & \textbf{All Topics} & \textbf{144} & \textbf{0.038} & \textbf{-} & \textbf{59.056\%} & \textbf{24.641\%} \\
+\hline
+\addlinespace[0.3em]
+\multirow{7}{*}{\rotatebox{90}{\scalebox{0.8}{\textbf{White Democrats}}}} 
+& Cultural & 18 & 0.118 & - & 64.706\% & 5.882\% \\
+ & Economic & 45 & 0.065 & - & 68.182\% & 25.000\% \\
+ & Foreign Policy & 23 & 0.015 & - & 55.000\% & 14.286\% \\
+ & Immigration & 22 & 0.193 & - & 57.895\% & 21.053\% \\
+ & Law Enforcement & 16 & 0.038 & - & 37.500\% & 0.000\% \\
+ & Social Welfare & 20 & 0.025 & - & 77.778\% & 16.667\% \\
+ & \textbf{All Topics} & \textbf{144} & \textbf{0.076} & \textbf{-} & \textbf{60.177\%} & \textbf{13.815\%} \\
+\hline
+\addlinespace[0.3em]
+\multirow{7}{*}{\rotatebox{90}{\scalebox{0.8}{\textbf{White Republicans}}}} 
+& Cultural & 18 & 0.001 & - & 72.222\% & 11.111\% \\
+ & Economic & 45 & 0.085 & - & 75.000\% & 27.273\% \\
+ & Foreign Policy & 23 & 0.082 & - & 65.000\% & 23.810\% \\
+ & Immigration & 22 & 0.081 & - & 76.190\% & 13.636\% \\
+ & Law Enforcement & 16 & 0.085 & - & 75.000\% & 37.500\% \\
+ & Social Welfare & 20 & 0.121 & - & 89.474\% & 25.000\% \\
+ & \textbf{All Topics} & \textbf{144} & \textbf{0.076} & \textbf{-} & \textbf{75.481\%} & \textbf{23.055\%} \\
+\bottomrule
+\end{tabular}
+}
+\end{table}
+
+
+
+The table containing the results from the aforementioned reproduction is above. When cross-referenced with the final results of Auslen and Phillip, we can see that almost all results are significantly different. As stated previously, this is attributed to the complete change in the code, smaller sample size, and smaller simulation. The opinion gap statistically significant was also not able to be replicated successfully, and the results for this column are completely inconclusive. This paper poses the question, however, that would analyses across races and incomes still be possible despite the large gap in the final results between this paper's table and the original papers? Assuming that the issue of obtaining the standard error column, labeled as the "opinion gap statistically significant, " can be solved. This comparison between races and incomes is based on new data, as opposed to existing data produced by the original researchers.  
+
+The reason the table with only white respondents was selected is because understanding their findings at a deeper level, within racial cleavages, is one of the areas this paper thinks the original article can expand on. They only briefly look at the net opinion gap differences, across races in table 5, of the original article. However, we stand to gain a lot more knowledge if we potentially look at each topic group independently, at the intra-race level as well. Same with potentially look at intra-income differences at the racial level. Which is something this paper will further expand on in the next section, as well as the final discussion section. But ultimately, the rationale behind this is to look at what _exactly_ divides people by income, or in the case of looking at the intra-income level, what _exactly_ divides people within their income. 
+
+Ultimately, on one one hand, the replication was successful. By producing tables and figures from the original scholarship, using the tools they provided potential replicators with, we were able to complete the recreation of the original study. However, problems persist when attempting to generate new results and findings using the same tools. Ultimately, the results were largely inconclusive and showed little statistical significance. Nonetheless, this may be something to build on at a later date. 
+
+# Expansion Idea 
+
+This paper proposes two new inquiries, to expand upon the original scholarship by Michael Auslen and Justin H. Phillips. The first being a recreation of the table that highlights the results, such as the opinion gap, of all white respondents, but for every race. In doing this, we may get a better understanding where racial groups are most divided by income, and then be able go a step further to look within those specific topic domains. This poses as especially interesting for the democratic party, where existing scholarship already highlights a blue divide, something the article by Auslen and Phillips reinforces.[@hacker_bridging_2024] An additional inquiry this paper proposes is to look at the the intra-income level. What is meant by this is looking at how high-income and low-income democrats and republicans compare their opinions from the CES survey across political parties. For example, what does the gap look like when looking at high-income democrats versus high-income republicans?
+
+
+Upon testing this question, this project posits two hypotheses regarding potential results. Those are:  
+
+> **Hypothesis 1**: _For the topic category "economic,” there would be no sizable opinion gap among high-income survey respondents._
+
+> **Hypothesis 2**: _For the topic category "economic,” there would be no sizable opinion gap among low-income survey respondents._
+
+
+The rationale for both the hypotheses is the same. That is, people are greatly divided on non-economic policies, which is great cause of polarization. This paper suggests that polarization stems from many cultural, and identity issues. However, people may generally have similar economic policy opinions within their socio-economic status. These cultural and identity issues, as well as polarization, partisanship, and socialization of political parties in the United States, keep these people within their respective parties. However, they still hold certain beliefs, especially economically, because of social class, and or socio-economic status. Which creates a political landscape in where there is increased opinion differences at the intra-party level. These hypotheses can also be examined at the intra-race level to see if there are any differences among respondents based on their race. The original article also examined this variable, among others, for their primary question.   
+
+
+# Discussion 
+
+The article by Auslen and Phillips begins to open the door for a myriad of more conversations about political behavior, and public opinion Specifically when looking at intra-party politics, and as well as people deriving their political interests, and opinions from their economic standing. Which is the case for with any good scholarship however, as good work will always inspire plethora of more questions, and areas within the original work that would benefit to being explored. With this article particular however, there is also a big, looming question of what does their scholarship mean, from a causal inference perspective, in the sense of what causes this division by income, at the intra party level.   
+ 
+Some of the ways we can begin to understand where the results from Auslen and Phillips fit within broader questions of American politics, and the literature canon, is by situating their work inside Jacob Hacker's article _Bridging the Blue Divide_, which was mentioned previously. Hacker highlights how the democratic party is caught in a reality where they need to maintain their working class supporter base, but also appeal to high income, socially liberally city dwellers. In theory, these two groups are at odds with each other. This conversation can be furthered by literature that also looks at the democratic party no longer being the party of the poor, or working class, which is an idea this paper wrestles with itself[@stonecash_class_2000]. As suggested throughout this article, this division by income at the intra-party level is likely a greater consequence of polarization, but also consequence of neither party focusing on material politics, but rather identity politics. In other words, there has been little focus on guns and butter politics, which has sorted people to parties based on their opinions about social, and identity issues. In which there is a very starch contrast between the democratic and political parties of the United States. . Michael Tesler's work on identity highlights how these divides on identity are partisanship drivers, also helps begin to think about a pathway for us to come to a causal explanation on why this divide is so strong within not just the democratic party, but the republican party too. [@sides_identity_2019].^[This is also in reference to Michael Tesler's book presentation for his next book on identity, which was given October 14th, 2024 at Northwestern University] 
+ 
+ 
+Other literature that would tie with the original project's findings and questions, as well as new ones, would be work on class and the American political parties [@stonecash_class_2000]. Research highlights how people of lower income now give less money to political parties, and in general, economic inequality plays a great role in the influences of political power in america [@gilens_affluence_2012; @gilens_testing_2014]. It goes without saying that examining the role race plays in the United States’ public opinion would greatly expand the discussions of Auslen and Phillips, specifically work by Katherine Cramer [@cramer_understanding_2020]. Not from a findings perspective, but conversations on interpreting more about what their findings mean. As well as future ones. 
+ 
+Moving beyond the interest in identifying a cause for this outcome in the original paper, is identify more gaps to explore. Which inherently, might also play a part in understanding the cause. These gaps include looking at the differences between high income republicans and democrats, for all respondents, as well as respondents based on race. This would likely allow us to see what topics are most similar or most different, and isolate those findings, to potentially get an idea of the causes of partisanship divisions, as well as economic divisions at the intra-party level. And within each topic group of interesting results, isolation can be taken a step further by looking at which questions are needle movers, or have the most division. Which ultimately would allow paint a better picture on what is causing divisions, but also in some sense, what causes  alignment. 
+
+In general, taking a deep look at intra-party politics is likely an important intervention within the conversations of polarization and partisanship. The field of American Politics has a good grasp on the notion that Americans are polarized, but deeper analyses could be ahead about why, and on what. Especially because as this paper hypothesizes, that looking specific groups may highlight some contradictions. Ultimately, this project by Auslen and Phillips opens up a slew of important doors, which would advance conversations within the field. 
+
+\newpage
+
+# References {.unnumbered}
+
+::: {#refs}
+:::
+
+
